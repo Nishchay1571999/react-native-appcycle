@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- When the user sets this app as the default assistant, long-press home invokes
+     AppcycleVoiceInteractionSessionService, which creates AppcycleOverlayVoiceSession
+     and starts MainActivity with openOverlay=true. -->
+<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:sessionService="appcycle.example.AppcycleVoiceInteractionSessionService"
+    android:recognitionService="appcycle.example.AppcycleRecognitionService"
+    android:supportsAssist="true"
+    android:supportsLaunchVoiceAssistFromKeyguard="true" />

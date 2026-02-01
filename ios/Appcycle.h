@@ -1,5 +1,5 @@
-#import <AppcycleSpec/AppcycleSpec.h>
+#import <React/RCTEventEmitter.h>
+#import <React/RCTBridgeModule.h>
 
-@interface Appcycle : NSObject <NativeAppcycleSpec>
-
+@interface Appcycle : RCTEventEmitter <RCTBridgeModule>
 @end

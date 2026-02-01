@@ -1,2 +1,45 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <service
+            android:name=".AppcycleRuntimeService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:process=":runtime" />
+
+        <!--
+          Overlay trigger: when the user uses the accessibility button (or shortcut),
+          starts the main Activity with com.appcycle.SHOW_OVERLAY and openOverlay=true.
+          User must enable this in Settings → Accessibility.
+        -->
+        <service
+            android:name=".AppcycleOverlayAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true"
+            android:label="@string/appcycle_accessibility_service_label">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- Quick Settings tile: when tapped, starts main Activity with openOverlay=true. -->
+        <service
+            android:name=".AppcycleOverlayTileService"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true"
+            android:label="@string/appcycle_overlay_tile_label"
+            android:icon="@android:drawable/ic_btn_speak_now">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+    </application>
+
 </manifest>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Label for the overlay trigger accessibility service (Settings → Accessibility). -->
+  <string name="appcycle_accessibility_service_label">Appcycle overlay trigger</string>
+  <!-- Description shown when enabling the accessibility service. -->
+  <string name="appcycle_accessibility_service_description">When enabled, you can open the app overlay using the accessibility button (nav bar) or the accessibility shortcut (e.g. hold both volume keys, if assigned to this service). Enable in Settings → Accessibility, then use the button or shortcut to open the overlay.</string>
+  <!-- Label for the Quick Settings tile. -->
+  <string name="appcycle_overlay_tile_label">Open overlay</string>
+  <!-- Notification action: open overlay. -->
+  <string name="appcycle_notification_action_open_overlay">Open overlay</string>
+</resources>

@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
       android:name=".MainApplication"
@@ -22,6 +24,50 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+        <!-- So the runtime service can start the app with openOverlay=true -->
+        <intent-filter>
+            <action android:name="com.appcycle.SHOW_OVERLAY" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
       </activity>
+
+      <!-- Overlay-only: only the BottomSheet, transparent background. Started from assistant (voice session). Not in launcher. Uses same task affinity as app so that when overlay is closed and user taps app icon, MainActivity starts in the same task. -->
+      <activity
+          android:name=".OverlayOnlyActivity"
+          android:theme="@style/Theme.OverlayOnly"
+          android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+          android:launchMode="singleTop"
+          android:windowSoftInputMode="adjustResize"
+          android:exported="false"
+          android:excludeFromRecents="true" />
+
+      <!-- Default assistant: when user sets this app as default (Settings → Voice input),
+           long-press home invokes the session service, which opens the overlay. -->
+      <service
+          android:name=".AppcycleVoiceInteractionService"
+          android:permission="android.permission.BIND_VOICE_INTERACTION"
+          android:exported="true"
+          android:label="@string/app_name">
+        <intent-filter>
+          <action android:name="android.service.voice.VoiceInteractionService" />
+        </intent-filter>
+        <meta-data
+            android:name="android.voice_interaction"
+            android:resource="@xml/voice_interaction_service" />
+      </service>
+      <service
+          android:name=".AppcycleVoiceInteractionSessionService"
+          android:permission="android.permission.BIND_VOICE_INTERACTION"
+          android:exported="true" />
+      <!-- Required for app to appear in default digital assistant list. -->
+      <service
+          android:name=".AppcycleRecognitionService"
+          android:exported="true"
+          android:label="@string/app_name">
+        <intent-filter>
+          <action android:name="android.speech.RecognitionService" />
+          <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+      </service>
     </application>
 </manifest>

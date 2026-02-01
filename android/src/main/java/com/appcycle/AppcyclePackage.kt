@@ -1,33 +1,21 @@
 package com.appcycle
 
-import com.facebook.react.BaseReactPackage
+import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.module.model.ReactModuleInfo
-import com.facebook.react.module.model.ReactModuleInfoProvider
-import java.util.HashMap
+import com.facebook.react.uimanager.ViewManager
 
-class AppcyclePackage : BaseReactPackage() {
-  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
-    return if (name == AppcycleModule.NAME) {
-      AppcycleModule(reactContext)
-    } else {
-      null
-    }
+class AppcyclePackage : ReactPackage {
+  override fun createNativeModules(
+    reactContext: ReactApplicationContext
+  ): List<NativeModule> {
+    return listOf(
+      AppcycleModule(reactContext),
+      OverlayModule(reactContext),
+    )
   }
 
-  override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
-    return ReactModuleInfoProvider {
-      val moduleInfos: MutableMap<String, ReactModuleInfo> = HashMap()
-      moduleInfos[AppcycleModule.NAME] = ReactModuleInfo(
-        AppcycleModule.NAME,
-        AppcycleModule.NAME,
-        false,  // canOverrideExistingModule
-        false,  // needsEagerInit
-        false,  // isCxxModule
-        true // isTurboModule
-      )
-      moduleInfos
-    }
-  }
+  override fun createViewManagers(
+    reactContext: ReactApplicationContext
+  ): List<ViewManager<*, *>> = emptyList()
 }

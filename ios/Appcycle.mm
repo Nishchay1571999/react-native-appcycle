@@ -1,21 +1,83 @@
 #import "Appcycle.h"
+#import <UIKit/UIKit.h>
 
-@implementation Appcycle
-- (NSNumber *)multiply:(double)a b:(double)b {
-    NSNumber *result = @(a * b);
-
-    return result;
+@implementation Appcycle {
+  BOOL isForeground;
+  BOOL hasListeners;
 }
 
-- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
-    (const facebook::react::ObjCTurboModule::InitParams &)params
+RCT_EXPORT_MODULE();
+
++ (BOOL)requiresMainQueueSetup {
+  return YES;
+}
+
+- (instancetype)init {
+  if (self = [super init]) {
+    isForeground = ([UIApplication sharedApplication].applicationState == UIApplicationStateActive);
+    hasListeners = NO;
+
+    NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+
+    [center addObserver:self
+               selector:@selector(onForeground)
+                   name:UIApplicationDidBecomeActiveNotification
+                 object:nil];
+
+    [center addObserver:self
+               selector:@selector(onBackground)
+                   name:UIApplicationWillResignActiveNotification
+                 object:nil];
+  }
+  return self;
+}
+
+- (void)dealloc {
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+#pragma mark - Events
+
+- (NSArray<NSString *> *)supportedEvents {
+  return @[@"onForeground", @"onBackground"];
+}
+
+- (void)startObserving {
+  hasListeners = YES;
+}
+
+- (void)stopObserving {
+  hasListeners = NO;
+}
+
+- (void)onForeground {
+  if (!isForeground) {
+    isForeground = YES;
+    if (hasListeners) {
+      [self sendEventWithName:@"onForeground" body:nil];
+    }
+  }
+}
+
+- (void)onBackground {
+  if (isForeground) {
+    isForeground = NO;
+    if (hasListeners) {
+      [self sendEventWithName:@"onBackground" body:nil];
+    }
+  }
+}
+
+#pragma mark - JS API
+
+RCT_EXPORT_METHOD(getCurrentState:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
 {
-    return std::make_shared<facebook::react::NativeAppcycleSpecJSI>(params);
+  resolve(isForeground ? @"foreground" : @"background");
 }
 
-+ (NSString *)moduleName
-{
-  return @"Appcycle";
-}
+// Required by NativeEventEmitter
+RCT_EXPORT_METHOD(addListener:(NSString *)eventName) {}
+RCT_EXPORT_METHOD(removeListeners:(double)count) {}
 
 @end

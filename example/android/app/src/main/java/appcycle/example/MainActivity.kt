@@ -1,5 +1,6 @@
 package appcycle.example
 
+import android.content.Intent
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -19,4 +20,14 @@ class MainActivity : ReactActivity() {
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
+
+  /**
+   * When the app is already running and the runtime service starts the activity with
+   * openOverlay=true, the system delivers the intent here. We set the intent so
+   * getIntent() returns the latest one and the overlay module can read openOverlay.
+   */
+  override fun onNewIntent(intent: Intent?) {
+    super.onNewIntent(intent)
+    intent?.let { setIntent(it) }
+  }
 }
