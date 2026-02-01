@@ -8,7 +8,7 @@ import { useOverlay } from './OverlayContext';
  * The example app can use this or register its own component via registerOverlayContent().
  */
 export function DefaultOverlayContent() {
-  const { close, overlayOnlyMode } = useOverlay();
+  const { close } = useOverlay();
   const appApi = useAppApi();
   const [result, setResult] = useState<string | null>(null);
 
