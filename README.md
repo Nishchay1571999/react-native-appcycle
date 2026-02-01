@@ -115,49 +115,49 @@ and start either your main Activity with `openOverlay` + `openOverlayOnly` or yo
 
 ## Usage
 
-### 1. Wrap your app with `OverlayProvider`
+### 1. Register overlay content and app API at entry (recommended)
 
-Your root component (or the subtree that needs overlay and lifecycle) should be wrapped in `OverlayProvider`:
+At app entry (e.g. `index.js`), register your overlay content component and app API so the overlay can render your UI and call into your app (e.g. API client, DB). No setup component or if/else in your app tree.
+
+```js
+// index.js
+import { AppRegistry } from 'react-native';
+import { registerOverlayContent, setDefaultAppApi, DefaultOverlayContent } from 'react-native-appcycle';
+import App from './src/App';
+import { name as appName } from './app.json';
+
+registerOverlayContent(DefaultOverlayContent); // or your own component from App.tsx
+setDefaultAppApi({
+  fetchExample: async () => ({ data: 'from app' }),
+  // ... your API methods
+});
+
+AppRegistry.registerComponent(appName, () => App);
+```
+
+- `registerOverlayContent(Component)`: the component that renders inside the overlay (BottomSheet). Use `DefaultOverlayContent` for a simple demo, or pass your own component (e.g. exported from `App.tsx`).
+- `setDefaultAppApi(api)`: object with methods the overlay can call via `useAppApi()` (e.g. `fetchExample`, API client, DB helpers).
+
+### 2. Wrap your app with `OverlayProvider`
+
+Your root component should be wrapped in `OverlayProvider`. The provider renders the overlay (BottomSheet) internally when visible; you do **not** mount `OverlayContainer` yourself. Overlay-only mode (e.g. when launched from the assistant) is handled inside the library.
 
 ```tsx
-import { OverlayProvider, OverlayContainer } from 'react-native-appcycle';
+// App.tsx
+import { OverlayProvider } from 'react-native-appcycle';
 
-function App() {
+export default function App() {
   return (
     <OverlayProvider>
-      <YourApp />
-      <OverlayContainer />
+      <YourMainApp />
     </OverlayProvider>
   );
 }
 ```
 
-- `OverlayProvider`: holds overlay visibility state, “overlay-only” mode, and app API.
-- `OverlayContainer`: renders the overlay modal (BottomSheet) when visible; must be mounted inside `OverlayProvider`.
+- `OverlayProvider`: holds overlay visibility state, “overlay-only” mode, and app API. It renders the overlay modal when visible and handles overlay-only layout (transparent background + overlay only) when the app was launched with `openOverlayOnly=true`.
 
-### 2. Register overlay content and app API
-
-So the overlay can render your UI and call into your app (e.g. API client, DB), register a content component and an API object:
-
-```tsx
-import { useOverlay, DefaultOverlayContent } from 'react-native-appcycle';
-
-function SetupOverlay() {
-  const { setAppApi, registerOverlayContent } = useOverlay();
-
-  useEffect(() => {
-    setAppApi({
-      fetchExample: async () => ({ data: 'from app' }),
-      // ... your API methods
-    });
-    registerOverlayContent(DefaultOverlayContent); // or your own component
-  }, [setAppApi, registerOverlayContent]);
-
-  return null;
-}
-```
-
-Use `DefaultOverlayContent` for a simple demo (title, Close, “Call API” that calls `appApi.fetchExample`), or pass your own component.
+**Optional (dynamic registration):** You can still call `setAppApi` and `registerOverlayContent` from `useOverlay()` inside your app if you prefer to register content or API after mount instead of at entry.
 
 ### 3. Show/hide overlay from your app
 
@@ -182,29 +182,7 @@ function MyScreen() {
 
 ### 4. Overlay-only mode (e.g. launched from assistant)
 
-When the app is started with `openOverlayOnly=true`, the library sets `overlayOnlyMode` to `true`. Your root UI can branch and render only the overlay (e.g. transparent background + `OverlayContainer`):
-
-```tsx
-function AppRoot() {
-  const { overlayOnlyMode } = useOverlay();
-
-  if (overlayOnlyMode) {
-    return (
-      <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-        <OverlayContainer />
-      </View>
-    );
-  }
-  return (
-    <>
-      <YourMainApp />
-      <OverlayContainer />
-    </>
-  );
-}
-```
-
-Inside the overlay, use `requestFullApp()` when the user taps “Open full app”; then switch to your main Activity (e.g. via `NativeModules.AppcycleOverlay.openFullApp()`). The example app wires this flow.
+When the app is started with `openOverlayOnly=true`, the library sets `overlayOnlyMode` to `true` and **renders only the overlay** (transparent background). You do not need to branch in your app; the provider handles this. Inside the overlay, use `requestFullApp()` when the user taps “Open full app”; then switch to your main Activity (e.g. via `NativeModules.AppcycleOverlay.openFullApp()`). The example app wires this flow.
 
 ### 5. Initialize and lifecycle (Android)
 
@@ -283,8 +261,10 @@ openDefaultAssistantSettings();
 
 | Export               | Description |
 |----------------------|-------------|
-| `OverlayProvider`    | Context provider for overlay state, app API, and overlay content. Wrap your app (or the subtree that uses overlay). |
-| `OverlayContainer`   | Renders the overlay modal (BottomSheet) when `visible`; must be used inside `OverlayProvider`. Content is the component passed to `registerOverlayContent`. |
+| `registerOverlayContent(Component)` | Register overlay content at app entry (e.g. `index.js`). Use your own component or `DefaultOverlayContent`. |
+| `setDefaultAppApi(api)` | Set default app API at app entry so the overlay can call into your app via `useAppApi()`. |
+| `OverlayProvider`    | Context provider for overlay state, app API, and overlay content. Renders the overlay (BottomSheet) internally; wrap your app (or the subtree that uses overlay). |
+| `OverlayContainer`   | Renders the overlay modal (BottomSheet) when `visible`. Used internally by `OverlayProvider`; you can also mount it yourself if not using registry. |
 | `DefaultOverlayContent` | Simple demo overlay (title, Close, “Call API” using `appApi.fetchExample`). |
 | `useOverlay()`       | Returns `{ visible, open, openAndBringToFront, close, overlayOnlyMode, requestFullApp, appApi, setAppApi, OverlayContent, registerOverlayContent }`. Throws if used outside `OverlayProvider`. |
 | `useAppApi()`        | Returns the app API object (for use inside overlay content). |
@@ -302,8 +282,8 @@ openDefaultAssistantSettings();
 
 The repo includes an **example** app (React Native 0.83) that demonstrates:
 
-- `OverlayProvider` + `OverlayContainer` + `DefaultOverlayContent`
-- Registering `appApi` and overlay content
+- **Registry-style**: `registerOverlayContent(CustomOverlayContent)` and `setDefaultAppApi({ fetchExample })` in `index.js`; custom overlay component exported from `App.tsx`
+- `OverlayProvider` wrapping the app (overlay rendered internally; no setup component or if/else)
 - Start/stop runtime, “Show overlay”, “Trigger overlay from background”
 - Opening default assistant settings
 - Overlay-only mode and “Open full app” (with optional `OverlayOnlyActivity` and voice services)
