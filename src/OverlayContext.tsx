@@ -7,11 +7,30 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import { AppState, NativeEventEmitter, NativeModules, Platform } from 'react-native';
+import { AppState, NativeEventEmitter, NativeModules, Platform, View } from 'react-native';
 import NativeOverlay from './NativeAppcycleOverlay';
+import { OverlayContainer } from './OverlayContainer';
 
 /** App-provided API (API client, DB, etc.) so the overlay can run app logic. */
 export type AppApi = Record<string, unknown>;
+
+// ---------- Registry (App.registry-style: call from index.js before app mounts) ----------
+
+let registeredOverlayContent: React.ComponentType | null = null;
+let registeredAppApi: AppApi | null = null;
+
+/** Register overlay content at app entry (e.g. index.js). Used when OverlayProvider mounts. */
+export function registerOverlayContent(Component: React.ComponentType): void {
+  registeredOverlayContent = Component;
+}
+
+/** Set default app API at app entry (e.g. index.js). Used when OverlayProvider mounts. */
+export function setDefaultAppApi(api: AppApi | null): void {
+  registeredAppApi = api;
+  if (typeof global !== 'undefined') {
+    (global as Record<string, unknown>).__OVERLAY_APP_API__ = api;
+  }
+}
 
 type OverlayContextValue = {
   visible: boolean;
@@ -38,8 +57,10 @@ const LAUNCH_EXTRA_OPEN_OVERLAY_ONLY = 'openOverlayOnly';
 export function OverlayProvider({ children }: { children: ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [overlayOnlyMode, setOverlayOnlyMode] = useState(false);
-  const [appApi, setAppApiState] = useState<AppApi | null>(null);
-  const [OverlayContent, setOverlayContent] = useState<React.ComponentType | null>(null);
+  const [appApi, setAppApiState] = useState<AppApi | null>(() => registeredAppApi ?? null);
+  const [OverlayContent, setOverlayContent] = useState<React.ComponentType | null>(
+    () => registeredOverlayContent ?? null
+  );
   const mountedRef = useRef(true);
   const overlayOnlyModeRef = useRef(false);
 
@@ -134,7 +155,16 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
 
   return (
     <OverlayContext.Provider value={value}>
-      {children}
+      {overlayOnlyMode ? (
+        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+          <OverlayContainer />
+        </View>
+      ) : (
+        <>
+          {children}
+          <OverlayContainer />
+        </>
+      )}
     </OverlayContext.Provider>
   );
 }

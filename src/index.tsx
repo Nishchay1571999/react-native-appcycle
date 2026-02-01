@@ -44,6 +44,8 @@ export {
   OverlayProvider,
   useOverlay,
   useAppApi,
+  registerOverlayContent,
+  setDefaultAppApi,
   type AppApi,
 } from './OverlayContext';
 export { OverlayContainer } from './OverlayContainer';

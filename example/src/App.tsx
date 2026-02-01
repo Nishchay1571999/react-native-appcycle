@@ -13,21 +13,14 @@ import {
 
 import Appcycle, {
   OverlayProvider,
-  OverlayContainer,
-  DefaultOverlayContent,
   useOverlay,
+  useAppApi,
   triggerShowOverlayFromBackground,
   openDefaultAssistantSettings,
 } from 'react-native-appcycle';
 
 const ANDROID_VERSION = Platform.OS === 'android' ? Platform.Version : 0;
 const NEEDS_NOTIFICATION_PERMISSION = ANDROID_VERSION >= 33;
-
-/** Dummy API function provided by the app so the overlay can call it (proves app API access). */
-async function fetchExample(): Promise<{ data: string }> {
-  await new Promise((r) => setTimeout(r, 300));
-  return { data: 'mock data from app' };
-}
 
 function AppContent() {
   const [ready, setReady] = useState(false);
@@ -168,56 +161,70 @@ function AppContent() {
   );
 }
 
+/** Custom overlay content (BottomSheet) – registered in index.js instead of DefaultOverlayContent. */
+export function CustomOverlayContent() {
+  const { close } = useOverlay();
+  const appApi = useAppApi();
+  const [result, setResult] = useState<string | null>(null);
+
+  const handleCallApi = async () => {
+    setResult(null);
+    const fetchExample = appApi?.fetchExample as (() => Promise<{ data?: string }>) | undefined;
+    if (typeof fetchExample !== 'function') {
+      setResult('No app API provided');
+      return;
+    }
+    try {
+      const res = await fetchExample();
+      setResult(JSON.stringify(res ?? {}));
+    } catch (e) {
+      setResult(String(e));
+    }
+  };
+
+  return (
+    <View style={overlayStyles.container}>
+      <Text style={overlayStyles.title}>Custom Modal</Text>
+      <View style={overlayStyles.buttons}>
+        <Button title="Close" onPress={close} />
+        <View style={{ width: 12 }} />
+        <Button title="Call API" onPress={handleCallApi} />
+      </View>
+      {result != null ? (
+        <Text style={overlayStyles.result}>{result}</Text>
+      ) : null}
+    </View>
+  );
+}
+
 export default function App() {
-  const [appApiSet, setAppApiSet] = useState(false);
-
-  useEffect(() => {
-    if (appApiSet) return;
-    setAppApiSet(true);
-  }, [appApiSet]);
-
   return (
     <OverlayProvider>
       <View style={{ flex: 1 }}>
-        <OverlayContentWithApi />
-        <AppRoot />
+        <AppContent />
       </View>
     </OverlayProvider>
   );
 }
 
-/** When overlayOnlyMode (launched from assistant), show only the overlay on a transparent background. Otherwise show full app + overlay. */
-function AppRoot() {
-  const { overlayOnlyMode } = useOverlay();
-  if (overlayOnlyMode) {
-    return (
-      <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-        <OverlayContainer />
-      </View>
-    );
-  }
-  return (
-    <>
-      <AppContent />
-      <OverlayContainer />
-    </>
-  );
-}
-
-/** Registers overlay content and sets app API once. */
-function OverlayContentWithApi() {
-  const { setAppApi, registerOverlayContent } = useOverlay();
-  const registered = useRef(false);
-
-  useEffect(() => {
-    if (registered.current) return;
-    registered.current = true;
-    setAppApi({ fetchExample });
-    registerOverlayContent(DefaultOverlayContent);
-  }, [setAppApi, registerOverlayContent]);
-
-  return null;
-}
+const overlayStyles = StyleSheet.create({
+  container: {
+    padding: 24,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  buttons: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  result: {
+    fontSize: 14,
+    color: '#333',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
